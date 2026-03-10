@@ -27,6 +27,9 @@ class NutritionController extends Controller
 
         $status = $log->wasRecentlyCreated ? 201 : 200;
 
+        // Auto-XP
+        app(\App\Services\GamificationService::class)->earnXp($request->user(), 'nutrition_log');
+
         return response()->json(['nutrition' => $log], $status);
     }
 

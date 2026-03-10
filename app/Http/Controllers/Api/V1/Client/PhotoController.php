@@ -40,6 +40,9 @@ class PhotoController extends Controller
             'url' => Storage::disk('public')->url($filename),
         ]);
 
+        // Auto-XP
+        app(\App\Services\GamificationService::class)->earnXp($request->user(), 'photo_upload');
+
         return response()->json(['data' => $photo], 201);
     }
 }

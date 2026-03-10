@@ -37,6 +37,10 @@ class CheckinController extends Controller
 
         event(new NewCheckinReceived($checkin->load('user')));
 
+        // Auto-XP
+        app(\App\Services\GamificationService::class)->earnXp($request->user(), 'checkin');
+        app(\App\Services\GamificationService::class)->updateStreak($request->user());
+
         return response()->json(['data' => $checkin, 'message' => 'Check-in guardado'], 201);
     }
 }
