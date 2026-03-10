@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\V1\Client\BiometricController;
 use App\Http\Controllers\Api\V1\GamificationController;
 use App\Http\Controllers\Api\V1\ReferralController;
 use App\Http\Controllers\Api\V1\Coach\AppointmentController;
+use App\Http\Controllers\Api\V1\TicketController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -124,6 +125,14 @@ Route::prefix('v1')->group(function () {
             // Biometric sync (Apple Health / Google Fit / manual)
             Route::post('metrics/biometric', [BiometricController::class, 'store']);
             Route::get('metrics/biometric/today', [BiometricController::class, 'today']);
+
+            // Tickets de soporte
+            Route::prefix('tickets')->group(function () {
+                Route::get('/', [TicketController::class, 'index']);
+                Route::post('/', [TicketController::class, 'store']);
+                Route::get('/{ticket}', [TicketController::class, 'show']);
+                Route::post('/{ticket}/messages', [TicketController::class, 'addMessage']);
+            });
         });
 
         // Gamification — leaderboard por grupo de coach
