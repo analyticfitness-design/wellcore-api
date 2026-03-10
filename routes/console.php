@@ -10,8 +10,10 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Behavioral triggers — 8am diario
+// Behavioral triggers — 8am diario (via Job + Command)
 Schedule::job(new SendBehavioralTrigger)->dailyAt('08:00');
+Schedule::command('wellcore:behavioral-triggers')->dailyAt('08:00');
 
-// Auto-renewal — 7am diario
+// Auto-renewal — 7am diario (via Job + Command)
 Schedule::job(new ProcessAutoRenewal)->dailyAt('07:00');
+Schedule::command('wellcore:auto-renewal')->dailyAt('07:00');
