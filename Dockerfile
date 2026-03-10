@@ -24,7 +24,7 @@ WORKDIR /var/www/html
 
 # Dependencies
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts
+RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts --ignore-platform-reqs
 
 # App code
 COPY . .
