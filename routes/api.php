@@ -8,12 +8,16 @@ use App\Http\Controllers\Api\V1\Client\MetricController;
 use App\Http\Controllers\Api\V1\Client\PhotoController;
 use App\Http\Controllers\Api\V1\Client\ProfileController;
 use App\Http\Controllers\Api\V1\Client\VideoCheckinController;
+use App\Http\Controllers\Api\V1\Client\MyPlanController;
+use App\Http\Controllers\Api\V1\Client\WorkoutLogController;
+use App\Http\Controllers\Api\V1\Client\BodyMeasurementController;
 use App\Http\Controllers\Api\V1\Admin\ClientsController as AdminClientsController;
 use App\Http\Controllers\Api\V1\Coach\ClientsController as CoachClientsController;
 use App\Http\Controllers\Api\V1\Coach\NotesController as CoachNotesController;
 use App\Http\Controllers\Api\V1\Coach\AnalyticsController as CoachAnalyticsController;
 use App\Http\Controllers\Api\V1\Coach\CheckinReplyController as CoachCheckinReplyController;
 use App\Http\Controllers\Api\V1\Coach\PodsController;
+use App\Http\Controllers\Api\V1\Coach\ClientPlanController;
 use App\Http\Controllers\Api\V1\Community\PostController as CommunityPostController;
 use App\Http\Controllers\Api\V1\Challenges\ChallengeController;
 use App\Http\Controllers\Api\V1\Payments\WompiController;
@@ -179,6 +183,26 @@ Route::prefix('v1')->group(function () {
         });
         Route::middleware('role:coach,admin,superadmin')->group(function () {
             Route::post('appointments', [AppointmentController::class, 'store']);
+        });
+
+        // === BLOQUE 3: Plans, Workout Logs, Body Measurements ===
+        Route::get('/my-plan', [MyPlanController::class, 'show']);
+
+        Route::prefix('workout-logs')->group(function () {
+            Route::get('/', [WorkoutLogController::class, 'index']);
+            Route::post('/', [WorkoutLogController::class, 'store']);
+            Route::delete('/{id}', [WorkoutLogController::class, 'destroy']);
+        });
+
+        Route::prefix('body-measurements')->group(function () {
+            Route::get('/', [BodyMeasurementController::class, 'index']);
+            Route::post('/', [BodyMeasurementController::class, 'store']);
+        });
+
+        // Coach: client plans
+        Route::middleware('role:coach,coach_external,admin,superadmin')->group(function () {
+            Route::get('/clients/{clientId}/plan', [ClientPlanController::class, 'show']);
+            Route::put('/clients/{clientId}/plan', [ClientPlanController::class, 'upsert']);
         });
     });
 });
