@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\V1\GamificationController;
 use App\Http\Controllers\Api\V1\ReferralController;
 use App\Http\Controllers\Api\V1\Coach\AppointmentController;
 use App\Http\Controllers\Api\V1\TicketController;
+use App\Http\Controllers\Api\V1\AiCoachController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -143,6 +144,14 @@ Route::prefix('v1')->group(function () {
 
         // Referral — cualquier usuario autenticado
         Route::get('referral/my-link', [ReferralController::class, 'myLink']);
+
+        // AI Coach — cualquier usuario autenticado
+        Route::prefix('ai')->group(function () {
+            Route::get('conversations', [AiCoachController::class, 'index']);
+            Route::get('conversations/{id}', [AiCoachController::class, 'show']);
+            Route::post('send', [AiCoachController::class, 'send']);
+            Route::delete('conversations/{id}', [AiCoachController::class, 'destroy']);
+        });
 
         // Appointments — cliente ve las suyas, coach ve las suyas, admin ve todas
         Route::middleware('role:client,coach,admin,superadmin')->group(function () {
