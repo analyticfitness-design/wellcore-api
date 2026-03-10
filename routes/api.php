@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\Client\CheckinController;
 use App\Http\Controllers\Api\V1\Client\MetricController;
 use App\Http\Controllers\Api\V1\Client\PhotoController;
 use App\Http\Controllers\Api\V1\Client\ProfileController;
+use App\Http\Controllers\Api\V1\Client\VideoCheckinController;
 use App\Http\Controllers\Api\V1\Admin\ClientsController as AdminClientsController;
 use App\Http\Controllers\Api\V1\Coach\ClientsController as CoachClientsController;
 use App\Http\Controllers\Api\V1\Coach\NotesController as CoachNotesController;
@@ -99,6 +100,15 @@ Route::prefix('v1')->group(function () {
             Route::post('/checkins', [CheckinController::class, 'store']);
             Route::get('/photos', [PhotoController::class, 'index']);
             Route::post('/photos', [PhotoController::class, 'store']);
+
+            // Video checkins con límites por plan
+            Route::prefix('video-checkins')->group(function () {
+                Route::get('/', [VideoCheckinController::class, 'index']);
+                Route::post('/', [VideoCheckinController::class, 'store']);
+                Route::get('/status', [VideoCheckinController::class, 'status']);
+                Route::get('/{id}', [VideoCheckinController::class, 'show']);
+                Route::delete('/{id}', [VideoCheckinController::class, 'destroy']);
+            });
 
             // Community
             Route::prefix('community')->group(function () {
