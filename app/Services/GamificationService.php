@@ -2,133 +2,173 @@
 
 namespace App\Services;
 
-use App\Events\LeaderboardUpdated;
 use App\Models\ClientXp;
 use App\Models\User;
 use App\Models\XpEvent;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class GamificationService
 {
-    const LEVELS = [
-        1 => 0, 2 => 200, 3 => 500, 4 => 1000, 5 => 2000, 6 => 4000,
+    public const XP_MAP = [
+        'checkin'        => 10,
+        'video_checkin'  => 20,
+        'streak_7'       => 50,
+        'streak_30'      => 150,
+        'badge'          => 30,
+        'challenge'      => 100,
+        'referral'       => 75,
+        'bonus'          => 0,
+        'nutrition_log'  => 5,
+        'wellness_log'   => 5,
+        'metric_log'     => 5,
+        'photo_upload'   => 15,
     ];
 
-    const XP_EVENTS = [
-        'checkin'       => 50,
-        'video_checkin' => 80,
-        'challenge'     => 200,
-        'badge'         => 100,
-        'referral'      => 300,
+    public const LEVEL_NAMES = [
+        1  => 'Iniciado',
+        2  => 'Aprendiz',
+        3  => 'Atleta',
+        4  => 'Guerrero',
+        5  => 'Élite',
+        6  => 'Campeón',
+        7  => 'Leyenda',
+        8  => 'WellCore Master',
     ];
 
-    public static function earnXp(User $user, string $eventType, int $customAmount = 0): array
+    public const LEVEL_XP = [
+        1 => 0,
+        2 => 200,
+        3 => 500,
+        4 => 1000,
+        5 => 2000,
+        6 => 4000,
+        7 => 7500,
+        8 => 12000,
+    ];
+
+    public function earnXp(User $user, string $eventType, ?int $customAmount = null): ClientXp
     {
-        $amount = $customAmount ?: (self::XP_EVENTS[$eventType] ?? 0);
-        $result = [];
+        $amount = $customAmount ?? (self::XP_MAP[$eventType] ?? 0);
+        if ($amount <= 0) {
+            return $this->getOrCreateXp($user);
+        }
 
-        DB::transaction(function () use ($user, $eventType, $amount, &$result) {
-            $xp = ClientXp::firstOrCreate(
-                ['user_id' => $user->id],
-                ['xp_total' => 0, 'level' => 1, 'streak_days' => 0]
-            );
+        XpEvent::create([
+            'user_id'    => $user->id,
+            'event_type' => $eventType,
+            'xp_gained'  => $amount,
+            'description' => "XP gained: {$eventType}",
+        ]);
 
-            $streakBonus = self::updateStreak($xp);
-            $total = $amount + $streakBonus;
+        $xp = $this->getOrCreateXp($user);
+        $xp->increment('xp_total', $amount);
+        $xp->refresh();
 
-            $xp->increment('xp_total', $total);
-            $freshXp = $xp->fresh();
-            $freshXp->level = self::calculateLevel($freshXp->xp_total);
-            $freshXp->save();
+        $newLevel = $this->calculateLevel($xp->xp_total);
+        if ($newLevel !== $xp->level) {
+            $xp->update(['level' => $newLevel]);
+        }
 
-            XpEvent::create([
-                'user_id'    => $user->id,
-                'event_type' => $eventType,
-                'xp_gained'  => $total,
-                'description' => "Ganaste {$total} XP por {$eventType}",
-            ]);
+        $coachId = $user->coach_id ?? $user->id;
+        Cache::forget("leaderboard.{$coachId}.week");
 
-            $result = ['xp_gained' => $total, 'streak_bonus' => $streakBonus];
-        });
-
-        event(new LeaderboardUpdated());
-
-        return array_merge($result, ['user_xp' => $user->fresh()->xp]);
+        return $xp->fresh();
     }
 
-    private static function updateStreak(ClientXp $xp): int
+    public function updateStreak(User $user): void
     {
-        $bonus = 0;
-        $lastActivity = $xp->last_activity_date;
+        $xp = $this->getOrCreateXp($user);
+        $today = now()->toDateString();
+        $lastActivity = $xp->last_activity_date?->toDateString();
 
-        if ($lastActivity === null) {
-            $xp->streak_days = 1;
-        } elseif ($lastActivity->isYesterday()) {
-            $xp->streak_days += 1;
-        } elseif (!$lastActivity->isToday()) {
-            $xp->streak_days = 1;
+        if ($lastActivity === $today) {
+            return;
         }
 
-        $xp->last_activity_date = today();
-        $xp->save();
-
-        if ($xp->streak_days === 7) {
-            $bonus = 150;
-        } elseif ($xp->streak_days === 30) {
-            $bonus = 500;
+        $yesterday = now()->subDay()->toDateString();
+        if ($lastActivity === $yesterday) {
+            $newStreak = $xp->streak_days + 1;
+        } else {
+            $newStreak = 1;
         }
 
-        return $bonus;
+        $xp->update([
+            'streak_days'        => $newStreak,
+            'last_activity_date' => $today,
+        ]);
+
+        if ($newStreak === 7) {
+            $this->earnXp($user, 'streak_7');
+        } elseif ($newStreak === 30) {
+            $this->earnXp($user, 'streak_30');
+        }
     }
 
-    private static function calculateLevel(int $xpTotal): int
+    public function getStats(User $user): array
     {
-        $level = 1;
-        foreach (self::LEVELS as $lvl => $threshold) {
-            if ($xpTotal >= $threshold) {
-                $level = $lvl;
-            }
-        }
-        return $level;
-    }
-
-    public static function getStatus(User $user): array
-    {
-        $xp = $user->xp ?? ClientXp::firstOrCreate(['user_id' => $user->id]);
-        $currentThreshold = self::LEVELS[$xp->level];
-        $nextLevel = min($xp->level + 1, 6);
-        $nextThreshold = self::LEVELS[$nextLevel];
-
-        $progressPct = 100;
-        if ($nextThreshold > $currentThreshold) {
-            $progressPct = (int) round(
-                ($xp->xp_total - $currentThreshold) / ($nextThreshold - $currentThreshold) * 100
-            );
-        }
+        $xp = $this->getOrCreateXp($user);
+        $level = $xp->level;
+        $levelName = self::LEVEL_NAMES[$level] ?? 'WellCore Master';
+        $nextLevelXp = self::LEVEL_XP[$level + 1] ?? self::LEVEL_XP[8];
+        $currentLevelXp = self::LEVEL_XP[$level] ?? 0;
+        $progressPct = $nextLevelXp > $currentLevelXp
+            ? (int) (($xp->xp_total - $currentLevelXp) / ($nextLevelXp - $currentLevelXp) * 100)
+            : 100;
 
         return [
             'xp_total'        => $xp->xp_total,
-            'level'           => $xp->level,
-            'level_name'      => self::levelName($xp->level),
-            'xp_next_level'   => $nextThreshold,
-            'xp_progress_pct' => $progressPct,
+            'level'           => $level,
+            'level_name'      => $levelName,
             'streak_days'     => $xp->streak_days,
-            'streak_active'   => $xp->last_activity_date?->isToday() ?? false,
+            'xp_next_level'   => $nextLevelXp,
+            'xp_progress_pct' => min(100, max(0, $progressPct)),
             'recent_events'   => XpEvent::where('user_id', $user->id)
-                ->orderByDesc('created_at')->limit(5)->get(),
+                ->orderByDesc('created_at')
+                ->limit(5)
+                ->get(['event_type', 'xp_gained', 'description', 'created_at']),
         ];
     }
 
-    private static function levelName(int $level): string
+    public function getAchievements(User $user): array
     {
-        return match ($level) {
-            1 => 'Iniciado',
-            2 => 'Comprometido',
-            3 => 'Constante',
-            4 => 'Dedicado',
-            5 => 'Elite',
-            6 => 'Leyenda',
-            default => 'Iniciado'
-        };
+        $xp = $this->getOrCreateXp($user);
+        $events = XpEvent::where('user_id', $user->id)
+            ->pluck('event_type')
+            ->toArray();
+
+        $checkinCount = $user->checkins()->count();
+        $photoCount   = $user->photos()->count();
+
+        return [
+            ['id' => 'first_checkin',  'name' => 'Primer Check-in',    'emoji' => '✅', 'xp' => 10,  'unlocked' => in_array('checkin', $events)],
+            ['id' => 'streak_7',       'name' => 'Racha de 7 días',    'emoji' => '🔥', 'xp' => 50,  'unlocked' => $xp->streak_days >= 7],
+            ['id' => 'streak_30',      'name' => 'Racha de 30 días',   'emoji' => '💎', 'xp' => 150, 'unlocked' => $xp->streak_days >= 30],
+            ['id' => 'checkins_10',    'name' => '10 Check-ins',       'emoji' => '💪', 'xp' => 100, 'unlocked' => $checkinCount >= 10],
+            ['id' => 'checkins_30',    'name' => '30 Check-ins',       'emoji' => '🏆', 'xp' => 300, 'unlocked' => $checkinCount >= 30],
+            ['id' => 'photo_progress', 'name' => 'Foto de progreso',   'emoji' => '📸', 'xp' => 15,  'unlocked' => $photoCount >= 1],
+            ['id' => 'level_3',        'name' => 'Nivel Atleta',       'emoji' => '⚡', 'xp' => 0,   'unlocked' => $xp->level >= 3],
+            ['id' => 'level_5',        'name' => 'Nivel Élite',        'emoji' => '👑', 'xp' => 0,   'unlocked' => $xp->level >= 5],
+            ['id' => 'challenge',      'name' => 'Primer Reto',        'emoji' => '🎯', 'xp' => 100, 'unlocked' => in_array('challenge', $events)],
+            ['id' => 'referral',       'name' => 'Embajador WellCore', 'emoji' => '🌟', 'xp' => 75,  'unlocked' => in_array('referral', $events)],
+        ];
+    }
+
+    private function getOrCreateXp(User $user): ClientXp
+    {
+        return ClientXp::firstOrCreate(
+            ['user_id' => $user->id],
+            ['xp_total' => 0, 'level' => 1, 'streak_days' => 0]
+        );
+    }
+
+    private function calculateLevel(int $xpTotal): int
+    {
+        $level = 1;
+        foreach (self::LEVEL_XP as $lvl => $required) {
+            if ($xpTotal >= $required) {
+                $level = $lvl;
+            }
+        }
+        return min($level, 8);
     }
 }

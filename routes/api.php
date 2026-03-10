@@ -125,6 +125,9 @@ Route::prefix('v1')->group(function () {
 
         // Gamification — leaderboard por grupo de coach
         Route::get('gamification/leaderboard', [GamificationController::class, 'leaderboard']);
+        Route::get('gamification/my-stats', [GamificationController::class, 'myStats']);
+        Route::get('gamification/achievements', [GamificationController::class, 'achievements']);
+        Route::post('gamification/earn-xp', [GamificationController::class, 'earnXp']);
 
         // Referral — cualquier usuario autenticado
         Route::get('referral/my-link', [ReferralController::class, 'myLink']);

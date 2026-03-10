@@ -4,18 +4,16 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\ClientXp;
+use App\Services\GamificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class GamificationController extends Controller
 {
-    /**
-     * Return the XP leaderboard for the coach group of the authenticated user.
-     *
-     * Results are cached for 5 minutes (300 seconds) per coach group.
-     * In tests the array cache driver is used, so no Redis is required.
-     */
+    public function __construct(private GamificationService $gamification) {}
+
+    /** GET /v1/gamification/leaderboard */
     public function leaderboard(Request $request): JsonResponse
     {
         $coachId  = $request->user()->coach_id ?? $request->user()->id;
@@ -38,5 +36,41 @@ class GamificationController extends Controller
         });
 
         return response()->json(['leaderboard' => $data]);
+    }
+
+    /** GET /v1/gamification/my-stats */
+    public function myStats(Request $request): JsonResponse
+    {
+        $stats = $this->gamification->getStats($request->user());
+        return response()->json(['stats' => $stats]);
+    }
+
+    /** GET /v1/gamification/achievements */
+    public function achievements(Request $request): JsonResponse
+    {
+        $achievements = $this->gamification->getAchievements($request->user());
+        return response()->json(['achievements' => $achievements]);
+    }
+
+    /** POST /v1/gamification/earn-xp */
+    public function earnXp(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'event_type' => 'required|string|in:' . implode(',', array_keys(GamificationService::XP_MAP)),
+            'amount'     => 'nullable|integer|min:1|max:1000',
+        ]);
+
+        $xp = $this->gamification->earnXp(
+            $request->user(),
+            $validated['event_type'],
+            $validated['amount'] ?? null
+        );
+
+        return response()->json([
+            'message'   => 'XP earned',
+            'xp_gained' => GamificationService::XP_MAP[$validated['event_type']] ?? $validated['amount'],
+            'new_total'  => $xp->xp_total,
+            'new_level'  => $xp->level,
+        ]);
     }
 }
