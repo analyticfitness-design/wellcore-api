@@ -41,8 +41,9 @@ return [
     ],
 
     'claude' => [
-        'key'     => env('CLAUDE_API_KEY'),
-        'version' => env('CLAUDE_API_VERSION', '2023-06-01'),
+        'api_key'  => env('CLAUDE_API_KEY', ''),
+        'base_url' => env('CLAUDE_BASE_URL', 'https://api.anthropic.com'),
+        'model'    => env('CLAUDE_MODEL', 'claude-sonnet-4-6'),
     ],
 
     'wompi' => [
