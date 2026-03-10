@@ -20,12 +20,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Set APP_URL dynamically for production deployments
+        // Trust X-Forwarded headers from EasyPanel reverse proxy
         if (!app()->isLocal()) {
-            $host = request()->getHost();
+            \Illuminate\Http\Request::setTrustedProxies(['*'], \Illuminate\Http\Request::HEADER_X_FORWARDED_ALL);
+
+            $proto = request()->header('x-forwarded-proto', 'https');
+            $host = request()->header('x-forwarded-host') ?? request()->getHost();
+
             if ($host && $host !== 'localhost') {
-                \URL::forceScheme('https');
-                \URL::forceRootUrl('https://' . $host);
+                \URL::forceScheme($proto);
+                \URL::forceRootUrl($proto . '://' . $host);
             }
         }
     }
