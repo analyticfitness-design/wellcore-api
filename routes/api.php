@@ -101,6 +101,8 @@ Route::prefix('v1')->group(function () {
             Route::prefix('community')->group(function () {
                 Route::get('/posts', [CommunityPostController::class, 'index']);
                 Route::post('/posts', [CommunityPostController::class, 'store']);
+                Route::post('/posts/{post}/react', [CommunityPostController::class, 'react']);
+                Route::delete('/posts/{post}/react', [CommunityPostController::class, 'unreact']);
             });
 
             // Challenges
