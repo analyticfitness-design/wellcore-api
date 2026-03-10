@@ -8,15 +8,18 @@ if [ -z "$APP_KEY" ]; then
   php artisan key:generate --force
 fi
 
+# IMPORTANT: Clear caches BEFORE setting APP_URL to avoid stale config
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
+php artisan cache:clear
+
 # Set APP_URL dynamically in production
-if [ -n "$HOSTNAME" ] && [ "$APP_ENV" != "local" ]; then
-  export APP_URL="https://${HOSTNAME}"
-elif [ -z "$APP_URL" ] || [ "$APP_URL" = "http://wellcore-api.test" ]; then
-  # Fallback: try to detect from HTTP_HOST or use default
+if [ "$APP_ENV" != "local" ]; then
   export APP_URL="https://wellcorefitness-wellcore-api.v9xcpt.easypanel.host"
 fi
 
-# Clear & cache config for production
+# Re-cache config for production
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
