@@ -61,6 +61,7 @@ class GamificationService
         ]);
 
         $xp = $this->getOrCreateXp($user);
+        $oldLevel = $xp->level;
         $xp->increment('xp_total', $amount);
         $xp->refresh();
 
@@ -71,6 +72,20 @@ class GamificationService
 
         $coachId = $user->coach_id ?? $user->id;
         Cache::forget("leaderboard.{$coachId}.week");
+
+        // Notificación de XP ganado
+        \App\Models\ClientNotification::send(
+            $user->id, 'xp_earned', "+{$amount} XP",
+            "Ganaste {$amount} XP por {$eventType}", ['xp' => $amount, 'event' => $eventType]
+        );
+
+        // Notificación de subida de nivel
+        if ($newLevel > $oldLevel) {
+            \App\Models\ClientNotification::send(
+                $user->id, 'level_up', '¡Subiste de nivel!',
+                'Ahora eres ' . self::LEVEL_NAMES[$newLevel], ['level' => $newLevel]
+            );
+        }
 
         return $xp->fresh();
     }

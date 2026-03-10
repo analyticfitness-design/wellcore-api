@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\V1\ReferralController;
 use App\Http\Controllers\Api\V1\Coach\AppointmentController;
 use App\Http\Controllers\Api\V1\TicketController;
 use App\Http\Controllers\Api\V1\AiCoachController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -151,6 +152,13 @@ Route::prefix('v1')->group(function () {
         Route::get('gamification/my-stats', [GamificationController::class, 'myStats']);
         Route::get('gamification/achievements', [GamificationController::class, 'achievements']);
         Route::post('gamification/earn-xp', [GamificationController::class, 'earnXp']);
+
+        // Notifications
+        Route::prefix('notifications')->group(function () {
+            Route::get('/', [NotificationController::class, 'index']);
+            Route::post('/read-all', [NotificationController::class, 'markAllRead']);
+            Route::post('/{id}/read', [NotificationController::class, 'markRead']);
+        });
 
         // Referral — cualquier usuario autenticado
         Route::get('referral/my-link', [ReferralController::class, 'myLink']);
