@@ -13,26 +13,30 @@ class WellCoreDemoSeeder extends Seeder
     public function run(): void
     {
         // Superadmin — equivalente a daniel.esparza en producción
-        User::factory()->create([
-            'name'     => 'Daniel Esparza',
-            'email'    => 'daniel.esparza@wellcorefitness.com',
-            'password' => Hash::make('RISE2026Admin!SuperPower'),
-            'role'     => 'superadmin',
-            'status'   => 'activo',
-            'plan'     => null,
-            'client_code' => null,
-        ]);
+        User::firstOrCreate(
+            ['email' => 'daniel.esparza@wellcorefitness.com'],
+            [
+                'name'        => 'Daniel Esparza',
+                'password'    => Hash::make('RISE2026Admin!SuperPower'),
+                'role'        => 'superadmin',
+                'status'      => 'activo',
+                'plan'        => null,
+                'client_code' => null,
+            ]
+        );
 
         // Coach principal — equivalente a coachsilvia en producción
-        $coach = User::factory()->create([
-            'name'     => 'Silvia Carvajal',
-            'email'    => 'coachsilvia@wellcorefitness.com',
-            'password' => Hash::make('Coach2026!'),
-            'role'     => 'coach',
-            'status'   => 'activo',
-            'plan'     => null,
-            'client_code' => null,
-        ]);
+        $coach = User::firstOrCreate(
+            ['email' => 'coachsilvia@wellcorefitness.com'],
+            [
+                'name'        => 'Silvia Carvajal',
+                'password'    => Hash::make('Coach2026!'),
+                'role'        => 'coach',
+                'status'      => 'activo',
+                'plan'        => null,
+                'client_code' => null,
+            ]
+        );
 
         // Clientes demo — equivalentes a los clientes de producción
         $clientsData = [
@@ -63,25 +67,29 @@ class WellCoreDemoSeeder extends Seeder
         ];
 
         foreach ($clientsData as $data) {
-            $client = User::factory()->create([
-                'name'      => $data['name'],
-                'email'     => $data['email'],
-                'password'  => Hash::make('Client2026!'),
-                'role'      => 'client',
-                'plan'      => $data['plan'],
-                'coach_id'  => $coach->id,
-                'status'    => 'activo',
-            ]);
+            $client = User::firstOrCreate(
+                ['email' => $data['email']],
+                [
+                    'name'     => $data['name'],
+                    'password' => Hash::make('Client2026!'),
+                    'role'     => 'client',
+                    'plan'     => $data['plan'],
+                    'coach_id' => $coach->id,
+                    'status'   => 'activo',
+                ]
+            );
 
-            ClientXp::create([
-                'user_id'            => $client->id,
-                'xp_total'           => $data['xp'],
-                'level'              => $data['level'],
-                'streak_days'        => $data['streak'],
-                'last_activity_date' => now()->subDays(rand(0, 1)),
-            ]);
+            if ($client->wasRecentlyCreated) {
+                ClientXp::create([
+                    'user_id'            => $client->id,
+                    'xp_total'           => $data['xp'],
+                    'level'              => $data['level'],
+                    'streak_days'        => $data['streak'],
+                    'last_activity_date' => now()->subDays(rand(0, 1)),
+                ]);
 
-            ClientProfile::firstOrCreate(['user_id' => $client->id]);
+                ClientProfile::firstOrCreate(['user_id' => $client->id]);
+            }
         }
 
         // Cliente real — Daniel Esparza (analyticfitness)

@@ -16,9 +16,6 @@ php artisan view:cache
 # Run migrations
 php artisan migrate --force --no-interaction
 
-# Seed initial data (idempotent — uses firstOrCreate)
-php artisan db:seed --force --no-interaction
-
 # Fix permissions
 chown -R www-data:www-data /var/www/html/storage bootstrap/cache
 
