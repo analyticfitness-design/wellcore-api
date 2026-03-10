@@ -20,6 +20,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Set APP_URL dynamically for production deployments
+        if (!app()->isLocal()) {
+            $host = request()->getHost();
+            if ($host && $host !== 'localhost') {
+                \URL::forceScheme('https');
+                \URL::forceRootUrl('https://' . $host);
+            }
+        }
     }
 }
