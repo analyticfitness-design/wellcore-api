@@ -11,8 +11,12 @@ use App\Http\Controllers\Api\V1\Client\VideoCheckinController;
 use App\Http\Controllers\Api\V1\Client\MyPlanController;
 use App\Http\Controllers\Api\V1\Client\WorkoutLogController;
 use App\Http\Controllers\Api\V1\Client\BodyMeasurementController;
+use App\Http\Controllers\Api\V1\Client\ExerciseVideoController;
+use App\Http\Controllers\Api\V1\Client\PersonalRecordController;
 use App\Http\Controllers\Api\V1\Admin\ClientsController as AdminClientsController;
+use App\Http\Controllers\Api\V1\Admin\KpiController;
 use App\Http\Controllers\Api\V1\Coach\ClientsController as CoachClientsController;
+use App\Http\Controllers\Api\V1\Coach\BroadcastController;
 use App\Http\Controllers\Api\V1\Coach\NotesController as CoachNotesController;
 use App\Http\Controllers\Api\V1\Coach\AnalyticsController as CoachAnalyticsController;
 use App\Http\Controllers\Api\V1\Coach\CheckinReplyController as CoachCheckinReplyController;
@@ -64,6 +68,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('role:admin,superadmin')->prefix('admin')->group(function () {
             Route::get('/clients', [AdminClientsController::class, 'index']);
             Route::post('/impersonate/{client}', [AdminClientsController::class, 'impersonate']);
+            Route::get('/kpis', [KpiController::class, 'index']);
         });
 
         // Coach routes
@@ -76,6 +81,10 @@ Route::prefix('v1')->group(function () {
             Route::get('/analytics', [CoachAnalyticsController::class, 'dashboard']);
             Route::get('/pods', [PodsController::class, 'index']);
             Route::post('/pods', [PodsController::class, 'store']);
+            Route::prefix('broadcasts')->group(function () {
+                Route::get('/', [BroadcastController::class, 'index']);
+                Route::post('/', [BroadcastController::class, 'store']);
+            });
         });
 
         // RISE routes — autenticadas
@@ -199,6 +208,15 @@ Route::prefix('v1')->group(function () {
         Route::prefix('body-measurements')->group(function () {
             Route::get('/', [BodyMeasurementController::class, 'index']);
             Route::post('/', [BodyMeasurementController::class, 'store']);
+        });
+
+        // === BLOQUE 4: Academy, Personal Records ===
+        Route::get('/exercise-videos', [ExerciseVideoController::class, 'index']);
+
+        Route::prefix('personal-records')->group(function () {
+            Route::get('/', [PersonalRecordController::class, 'index']);
+            Route::post('/', [PersonalRecordController::class, 'store']);
+            Route::delete('/{id}', [PersonalRecordController::class, 'destroy']);
         });
 
         // Coach: client plans
