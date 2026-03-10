@@ -105,6 +105,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/checkins', [CheckinController::class, 'store']);
             Route::get('/photos', [PhotoController::class, 'index']);
             Route::post('/photos', [PhotoController::class, 'store']);
+            Route::delete('/photos/{id}', [PhotoController::class, 'destroy']);
 
             // Video checkins con límites por plan
             Route::prefix('video-checkins')->group(function () {
@@ -166,6 +167,7 @@ Route::prefix('v1')->group(function () {
 
         // Referral — cualquier usuario autenticado
         Route::get('referral/my-link', [ReferralController::class, 'myLink']);
+        Route::get('referral/my-referrals', [ReferralController::class, 'myReferrals']);
 
         // AI Coach — cualquier usuario autenticado
         Route::prefix('ai')->group(function () {

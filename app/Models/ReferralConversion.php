@@ -13,4 +13,9 @@ class ReferralConversion extends Model
     {
         return $this->belongsTo(Referral::class);
     }
+
+    public function referredUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'referred_user_id');
+    }
 }

@@ -45,4 +45,21 @@ class PhotoController extends Controller
 
         return response()->json(['data' => $photo], 201);
     }
+
+    public function destroy(Request $request, $id): JsonResponse
+    {
+        $photo = Photo::where('user_id', $request->user()->id)->findOrFail($id);
+
+        // Delete from storage if it exists
+        if ($photo->filename) {
+            $path = 'progress/' . $request->user()->id . '/' . $photo->filename;
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
+        }
+
+        $photo->delete();
+
+        return response()->json(['message' => 'Photo deleted successfully']);
+    }
 }
