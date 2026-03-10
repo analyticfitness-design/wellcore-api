@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\V1\WellnessController;
 use App\Http\Controllers\Api\V1\Client\BiometricController;
 use App\Http\Controllers\Api\V1\GamificationController;
 use App\Http\Controllers\Api\V1\ReferralController;
+use App\Http\Controllers\Api\V1\Coach\AppointmentController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -133,5 +134,15 @@ Route::prefix('v1')->group(function () {
 
         // Referral — cualquier usuario autenticado
         Route::get('referral/my-link', [ReferralController::class, 'myLink']);
+
+        // Appointments — cliente ve las suyas, coach ve las suyas, admin ve todas
+        Route::middleware('role:client,coach,admin,superadmin')->group(function () {
+            Route::get('appointments', [AppointmentController::class, 'index']);
+            Route::put('appointments/{appointment}', [AppointmentController::class, 'update']);
+            Route::delete('appointments/{appointment}', [AppointmentController::class, 'destroy']);
+        });
+        Route::middleware('role:coach,admin,superadmin')->group(function () {
+            Route::post('appointments', [AppointmentController::class, 'store']);
+        });
     });
 });
