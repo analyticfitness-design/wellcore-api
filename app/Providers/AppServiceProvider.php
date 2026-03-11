@@ -32,8 +32,6 @@ class AppServiceProvider extends ServiceProvider
                 \URL::forceRootUrl($proto . '://' . $host);
             }
 
-            // Configure Sanctum to accept requests from production hosts
-            \Laravel\Sanctum\Sanctum::usePersonalAccessTokens();
         }
     }
 }
