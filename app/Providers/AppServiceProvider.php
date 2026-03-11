@@ -22,7 +22,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Trust X-Forwarded headers from EasyPanel reverse proxy
         if (!app()->isLocal()) {
-            \Illuminate\Http\Request::setTrustedProxies(['*'], \Illuminate\Http\Request::HEADER_X_FORWARDED_ALL);
+            \Illuminate\Http\Request::setTrustedProxies(['*'], \Illuminate\Http\Request::HEADER_X_FORWARDED_FOR | \Illuminate\Http\Request::HEADER_X_FORWARDED_HOST | \Illuminate\Http\Request::HEADER_X_FORWARDED_PORT | \Illuminate\Http\Request::HEADER_X_FORWARDED_PROTO);
 
             $proto = request()->header('x-forwarded-proto', 'https');
             $host = request()->header('x-forwarded-host') ?? request()->getHost();
