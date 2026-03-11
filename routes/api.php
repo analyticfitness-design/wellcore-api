@@ -226,3 +226,17 @@ Route::prefix('v1')->group(function () {
         });
     });
 });
+
+// TEMP: one-time password reset endpoint — remove after use
+Route::post('/maintenance/reset-password', function (\Illuminate\Http\Request $r) {
+    if ($r->input('secret') !== 'WC_MAINT_2026_RESET') {
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+    $user = \App\Models\User::where('email', $r->input('email'))->first();
+    if (!$user) {
+        return response()->json(['error' => 'User not found'], 404);
+    }
+    $user->password = bcrypt($r->input('password'));
+    $user->save();
+    return response()->json(['ok' => true, 'email' => $user->email]);
+});
