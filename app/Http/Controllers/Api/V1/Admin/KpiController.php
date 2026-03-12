@@ -15,14 +15,14 @@ class KpiController extends Controller
     {
         $totalClients = User::where('role', 'client')->count();
         $activeThisWeek = User::where('role', 'client')
-            ->where('last_login_at', '>=', now()->subDays(7))
+            ->where('updated_at', '>=', now()->subDays(7))
             ->count();
 
         $planDistribution = User::where('role', 'client')
-            ->select('plan_type', DB::raw('count(*) as total'))
-            ->groupBy('plan_type')
+            ->select('plan', DB::raw('count(*) as total'))
+            ->groupBy('plan')
             ->get()
-            ->pluck('total', 'plan_type');
+            ->pluck('total', 'plan');
 
         $workoutsThisWeek = WorkoutLog::where('logged_at', '>=', now()->subDays(7))->count();
 

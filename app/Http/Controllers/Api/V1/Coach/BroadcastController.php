@@ -35,7 +35,7 @@ class BroadcastController extends Controller
         // Send notification to target clients
         $clientsQuery = User::where('role', 'client');
         if ($validated['target'] !== 'all') {
-            $clientsQuery->where('plan_type', $validated['target']);
+            $clientsQuery->where('plan', $validated['target']);
         }
         $clients = $clientsQuery->get();
 

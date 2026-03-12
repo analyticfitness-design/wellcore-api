@@ -18,8 +18,8 @@ class BehavioralTriggersCommand extends Command
         // Usuarios con racha en riesgo (sin actividad hace 20-24h pero tienen racha >= 7 días)
         $streakRisk = DB::table('client_xp')
             ->where('streak_days', '>=', 7)
-            ->where('last_activity_at', '<', now()->subHours(20))
-            ->where('last_activity_at', '>=', now()->subHours(24))
+            ->where('last_activity_date', '<', now()->subHours(20))
+            ->where('last_activity_date', '>=', now()->subHours(24))
             ->limit(50)
             ->get();
 
@@ -37,8 +37,8 @@ class BehavioralTriggersCommand extends Command
 
         // Usuarios sin actividad hace exactamente 3 días
         $inactive = DB::table('client_xp')
-            ->where('last_activity_at', '<', now()->subDays(3))
-            ->where('last_activity_at', '>=', now()->subDays(4))
+            ->where('last_activity_date', '<', now()->subDays(3))
+            ->where('last_activity_date', '>=', now()->subDays(4))
             ->limit(50)
             ->get();
 

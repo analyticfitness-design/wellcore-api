@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\Client\ExerciseVideoController;
 use App\Http\Controllers\Api\V1\Client\PersonalRecordController;
 use App\Http\Controllers\Api\V1\Admin\ClientsController as AdminClientsController;
 use App\Http\Controllers\Api\V1\Admin\KpiController;
+use App\Http\Controllers\Api\V1\Admin\ActivityLogController;
 use App\Http\Controllers\Api\V1\Coach\ClientsController as CoachClientsController;
 use App\Http\Controllers\Api\V1\Coach\BroadcastController;
 use App\Http\Controllers\Api\V1\Coach\NotesController as CoachNotesController;
@@ -38,6 +39,12 @@ use App\Http\Controllers\Api\V1\Coach\AppointmentController;
 use App\Http\Controllers\Api\V1\TicketController;
 use App\Http\Controllers\Api\V1\AiCoachController;
 use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\DeviceTokenController;
+use App\Http\Controllers\Api\V1\Client\HabitController;
+use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\PlanFeatureController;
+use App\Http\Controllers\Api\V1\CoachTipsController;
+use App\Http\Controllers\Api\V1\NutritionAiController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -59,6 +66,9 @@ Route::prefix('v1')->group(function () {
     // Wompi webhook — público (firmado por Wompi, sin auth:sanctum)
     Route::post('/payments/wompi/webhook', [WompiController::class, 'webhook']);
 
+    // Protected — pero antes del grupo auth:sanctum
+    // (se mueve abajo dentro del grupo protegido)
+
     // Protected
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/auth/me', MeController::class);
@@ -69,6 +79,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/clients', [AdminClientsController::class, 'index']);
             Route::post('/impersonate/{client}', [AdminClientsController::class, 'impersonate']);
             Route::get('/kpis', [KpiController::class, 'index']);
+            Route::get('/activity-log', [ActivityLogController::class, 'index']);
         });
 
         // Coach routes
@@ -143,6 +154,7 @@ Route::prefix('v1')->group(function () {
             // Nutrition tracking — daily upsert per user
             Route::post('nutrition', [NutritionController::class, 'store']);
             Route::get('nutrition/today', [NutritionController::class, 'today']);
+            Route::post('nutrition/analyze', [NutritionAiController::class, 'analyze']);
 
             // Mental wellness tracking — daily upsert per user
             Route::post('wellness', [WellnessController::class, 'store']);
@@ -166,6 +178,10 @@ Route::prefix('v1')->group(function () {
         Route::get('gamification/my-stats', [GamificationController::class, 'myStats']);
         Route::get('gamification/achievements', [GamificationController::class, 'achievements']);
         Route::post('gamification/earn-xp', [GamificationController::class, 'earnXp']);
+
+        // Device tokens (FCM push)
+        Route::post('/device-tokens', [DeviceTokenController::class, 'register']);
+        Route::delete('/device-tokens', [DeviceTokenController::class, 'destroy']);
 
         // Notifications
         Route::prefix('notifications')->group(function () {
@@ -195,6 +211,25 @@ Route::prefix('v1')->group(function () {
         Route::middleware('role:coach,admin,superadmin')->group(function () {
             Route::post('appointments', [AppointmentController::class, 'store']);
         });
+
+        // === Habits (daily tracking) ===
+        Route::prefix('habits')->group(function () {
+            Route::get('/today', [HabitController::class, 'today']);
+            Route::post('/toggle', [HabitController::class, 'toggle']);
+        });
+
+        // === Dashboard consolidated endpoint ===
+        Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
+
+        // === Plan features (gating matrix) ===
+        Route::get('/plans/features', [PlanFeatureController::class, 'index']);
+
+        // === Coach Tips (audio + video) ===
+        Route::get('/coach-tips', [CoachTipsController::class, 'index']);
+
+        // === Payments (Wompi) ===
+        Route::post('/payments/create-session', [WompiController::class, 'createSession']);
+        Route::get('/payments/history', [WompiController::class, 'history']);
 
         // === BLOQUE 3: Plans, Workout Logs, Body Measurements ===
         Route::get('/my-plan', [MyPlanController::class, 'show']);
